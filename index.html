@@ -1,68 +1,111 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Poke-Battler Lite</title>
+    <title>Poke-Battler: Battle Edition</title>
     <style>
-        body { font-family: 'Courier New', monospace; background: #222; color: #fff; text-align: center; }
-        #game-container { border: 2px solid #fbd000; width: 400px; margin: 50px auto; padding: 20px; border-radius: 10px; }
-        .stats { font-size: 1.2rem; margin-bottom: 20px; color: #00ffcc; }
-        .controls button { background: #ff1f1f; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 5px; }
-        .controls button:hover { background: #cc1a1a; }
-        #log { margin-top: 20px; height: 100px; overflow-y: auto; background: #333; padding: 10px; font-size: 0.9rem; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #1a1a2e; color: #fff; display: flex; flex-direction: column; align-items: center; }
+        #game-container { background: #16213e; border: 3px solid #e94560; width: 450px; padding: 20px; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .stats-bar { display: flex; justify-content: space-around; background: #0f3460; padding: 10px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
+        .enemy-area { background: #533483; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 2px dashed #e94560; }
+        .hp-bar { background: #444; height: 20px; width: 100%; border-radius: 10px; margin-top: 5px; overflow: hidden; }
+        #hp-fill { background: #ff4d4d; height: 100%; width: 100%; transition: width 0.3s; }
+        .controls button { width: 100%; margin: 5px 0; padding: 12px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; text-transform: uppercase; }
+        .btn-battle { background: #e94560; color: white; }
+        .btn-upgrade { background: #0f3460; color: #00ffcc; border: 1px solid #00ffcc; }
+        #log { height: 120px; overflow-y: auto; background: #1a1a2e; padding: 10px; margin-top: 15px; font-size: 0.85rem; border-radius: 5px; text-align: left; }
+        .price-tag { color: #fbd000; }
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <h1>POKE-BATTLER</h1>
-    <div class="stats">
-        Credits: $<span id="credits">0</span> | Power: <span id="power">10</span>
-    </div>
-    
-    <div class="controls">
-        <button onclick="battle()">BATTLE (Earn $)</button>
-        <button onclick="buyUpgrade()">UPGRADE (Cost: $50)</button>
-    </div>
+    <h2>POKÉ-BATTLER ARENA</h2>
 
-    <div id="log">Welcome, Trainer! Click Battle to start.</div>
-</div>
+    <div id="game-container">
+        <div class="stats-bar">
+            <span>💰 $<span id="credits">0</span></span>
+            <span>⚔️ Pwr: <span id="power">10</span></span>
+        </div>
+
+        <div class="enemy-area">
+            <strong id="enemy-name">Wild Rattata</strong><br>
+            <small>Enemy HP: <span id="enemy-hp-text">50</span>/50</small>
+            <div class="hp-bar"><div id="hp-fill"></div></div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn-battle" onclick="attackEnemy()">ATTACK!</button>
+            <button class="btn-upgrade" onclick="buyUpgrade()">
+                BUY TRAINING (Cost: $<span id="upgrade-cost">50</span>)
+            </button>
+        </div>
+
+        <div id="log">A wild opponent appeared! Press Attack to fight.</div>
+    </div>
 
 <script>
+    // Game State
     let credits = 0;
-    let power = 10;
+    let playerPower = 10;
     let upgradeCost = 50;
+    
+    // Enemy State
+    let enemyMaxHp = 50;
+    let enemyCurrentHp = 50;
+    let enemyLevel = 1;
 
     function updateDisplay() {
         document.getElementById('credits').innerText = credits;
-        document.getElementById('power').innerText = power;
+        document.getElementById('power').innerText = playerPower;
+        document.getElementById('upgrade-cost').innerText = upgradeCost;
+        
+        // Update HP Bar
+        const hpPercent = (enemyCurrentHp / enemyMaxHp) * 100;
+        document.getElementById('hp-fill').style.width = hpPercent + "%";
+        document.getElementById('enemy-hp-text').innerText = Math.max(0, enemyCurrentHp);
     }
 
-    function log(message) {
+    function log(message, color = "#fff") {
         const logDiv = document.getElementById('log');
-        logDiv.innerHTML = message + "<br>" + logDiv.innerHTML;
+        logDiv.innerHTML = `<span style="color:${color}">> ${message}</span><br>` + logDiv.innerHTML;
     }
 
-    function battle() {
-        // Simple RNG: Win 70% of the time
-        let chance = Math.random();
-        if (chance > 0.3) {
-            let earnings = Math.floor(power * 0.5) + 10;
-            credits += earnings;
-            log(`Victory! Your power helped you earn $${earnings}.`);
-        } else {
-            log("Tough loss! You gained nothing this time.");
+    function attackEnemy() {
+        // Calculate Damage (Player Power + small random variance)
+        let damage = playerPower + Math.floor(Math.random() * 5);
+        enemyCurrentHp -= damage;
+        log(`You dealt ${damage} damage!`, "#00ffcc");
+
+        if (enemyCurrentHp <= 0) {
+            victory();
         }
         updateDisplay();
+    }
+
+    function victory() {
+        let reward = 20 + (enemyLevel * 10);
+        credits += reward;
+        log(`ENEMY DEFEATED! Gained $${reward}.`, "#fbd000");
+
+        // Spawn a stronger enemy
+        enemyLevel++;
+        enemyMaxHp = 50 + (enemyLevel * 20);
+        enemyCurrentHp = enemyMaxHp;
+        document.getElementById('enemy-name').innerText = "Wild Enemy Lvl " + enemyLevel;
+        
+        log(`A stronger Level ${enemyLevel} enemy appeared!`, "#ff4d4d");
     }
 
     function buyUpgrade() {
         if (credits >= upgradeCost) {
             credits -= upgradeCost;
-            power += 5;
-            upgradeCost = Math.floor(upgradeCost * 1.5);
-            log(`Upgraded! Power is now ${power}. Next upgrade: $${upgradeCost}`);
+            playerPower += 8; // Increase attack power
+            
+            // MATH: Increase cost by 60% each time and round it
+            upgradeCost = Math.floor(upgradeCost * 1.6);
+            
+            log(`Training complete! Power is now ${playerPower}.`, "#00ffcc");
         } else {
-            log("Not enough credits!");
+            log("Not enough credits for training!", "#ff4d4d");
         }
         updateDisplay();
     }
