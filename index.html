@@ -1,24 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Poke-Battler: Advanced Turn System</title>
+    <title>Poke-Battler: Type Advantage Edition</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #fff; display: flex; flex-direction: column; align-items: center; }
-        #game-container { background: #16213e; border: 3px solid #e94560; width: 550px; padding: 20px; border-radius: 15px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #fff; display: flex; flex-direction: column; align-items: center; }
+        #game-container { background: #1e1e1e; border: 4px solid #333; width: 550px; padding: 20px; border-radius: 10px; }
         
-        .battle-scene { display: flex; justify-content: space-around; align-items: center; height: 180px; background: #0f3460; border-radius: 10px; margin-bottom: 10px; }
+        /* Battle Visuals */
+        .battle-scene { display: flex; justify-content: space-between; align-items: flex-end; height: 220px; background: linear-gradient(#87CEEB 60%, #90EE90 60%); border-radius: 8px; padding: 20px; margin-bottom: 10px; border: 2px solid #000; }
+        .unit { text-align: center; width: 180px; }
         .sprite { width: 120px; height: 120px; image-rendering: pixelated; }
         
-        /* UI Panels */
-        .menu-bar { background: #1a1a2e; padding: 15px; border-radius: 10px; border: 2px solid #444; }
-        .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        /* HP Bars */
+        .status-box { background: #fdf6d8; color: #333; padding: 5px 10px; border-radius: 5px; border: 2px solid #555; text-align: left; font-family: monospace; font-weight: bold; }
+        .hp-bg { background: #444; height: 10px; width: 100%; border-radius: 5px; margin: 4px 0; border: 1px solid #000; }
+        .hp-fill { height: 100%; width: 100%; transition: width 0.4s, background-color 0.4s; background: #48bb78; }
         
-        button { padding: 10px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; background: #e94560; color: white; }
-        button:disabled { background: #444; cursor: not-allowed; }
-        .btn-utility { background: #0f3460; border: 1px solid #00ffcc; color: #00ffcc; }
-
-        #log { height: 80px; overflow-y: auto; font-size: 0.85rem; background: #000; padding: 10px; margin-bottom: 10px; border-radius: 5px; color: #00ff00; }
-        .hp-text { font-family: monospace; color: #ff4d4d; }
+        /* Controls */
+        .menu-bar { background: #2d3748; padding: 15px; border-radius: 10px; }
+        .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button { padding: 12px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; background: #edf2f7; color: #2d3748; box-shadow: 0 4px #cbd5e0; }
+        button:active { transform: translateY(2px); box-shadow: 0 2px #cbd5e0; }
+        .btn-move { background: #f56565; color: white; box-shadow: 0 4px #9b2c2c; }
+        
+        #log { height: 60px; overflow-y: auto; font-size: 0.9rem; background: #000; padding: 10px; margin-bottom: 10px; border-radius: 5px; color: #fff; border: 2px solid #4a5568; }
     </style>
 </head>
 <body>
@@ -26,96 +31,124 @@
     <div id="game-container">
         <div style="display:flex; justify-content: space-between; margin-bottom: 10px;">
             <span>💰 $<span id="credits">0</span></span>
-            <span>⭐ Shop Multiplier: <span id="mult">1.0</span>x</span>
+            <span>⭐ Shop: $<span id="cost">50</span></span>
         </div>
 
-        <div id="log">A wild Pokémon appeared! Your turn.</div>
+        <div id="log">A wild Pokémon appeared!</div>
 
         <div class="battle-scene">
-            <div class="unit">
-                <img id="p-sprite" class="sprite" src="">
-                <div id="p-name">---</div>
-            </div>
-            <div class="unit">
+            <div class="unit" style="align-self: flex-start; margin-left: auto;">
+                <div class="status-box">
+                    <div id="e-name">ENEMY</div>
+                    <div class="hp-bg"><div id="e-hp-fill" class="hp-fill"></div></div>
+                    <div style="font-size: 0.7rem; text-align: right;">HP: <span id="e-hp-text">50</span>/50</div>
+                </div>
                 <img id="e-sprite" class="sprite" src="">
-                <div id="e-name">---</div>
-                <div class="hp-text">HP: <span id="e-hp">x</span>/50</div>
+            </div>
+
+            <div class="unit" style="align-self: flex-end;">
+                <img id="p-sprite" class="sprite" src="">
+                <div class="status-box">
+                    <div id="p-name">PLAYER</div>
+                    <div class="hp-bg"><div id="p-hp-fill" class="hp-fill"></div></div>
+                    <div style="font-size: 0.7rem; text-align: right;">HP: <span id="p-hp-text">100</span>/100</div>
+                </div>
             </div>
         </div>
 
         <div class="menu-bar">
-            <div id="menu-text">What will you do?</div>
             <div class="action-row" id="main-actions">
-                <button onclick="showMoves()">ATTACK</button>
-                <button onclick="showParty()">SWAP POKEMON</button>
-                <button onclick="useItem()" class="btn-utility">USE ITEM (Potions: <span id="items">1</span>)</button>
-                <button onclick="buyUpgrade()" class="btn-utility">UPGRADE ($<span id="cost">50</span>)</button>
+                <button onclick="showMoves()">FIGHT</button>
+                <button onclick="showParty()">POKéMON</button>
+                <button onclick="buyUpgrade()">TRAIN (5% Price Raise)</button>
+                <button onclick="spawnEnemy()" style="background:#718096; color:white;">RUN</button>
             </div>
-            <div class="action-row" id="sub-actions" style="display:none;">
-                </div>
+            <div class="action-row" id="sub-actions" style="display:none;"></div>
         </div>
     </div>
 
 <script>
-    // Game Data
+    // Game Data & Type Chart
+    const types = {
+        fire: { weakTo: ['water', 'ground'], resists: ['grass', 'fire'] },
+        water: { weakTo: ['grass', 'electric'], resists: ['fire', 'water'] },
+        grass: { weakTo: ['fire', 'ice', 'poison'], resists: ['water', 'grass'] },
+        normal: { weakTo: ['fighting'], resists: [] }
+    };
+
     let credits = 100;
     let upgradeCost = 50;
-    let potions = 1;
     let partyIndex = 0;
     let isPlayerTurn = true;
 
     const party = [
-        { name: "Bulbasaur", id: 1, moves: ["Tackle", "Vine Whip"], pwr: 12 },
-        { name: "Charmander", id: 4, moves: ["Scratch", "Ember"], pwr: 14 },
-        { name: "Squirtle", id: 7, moves: ["Tackle", "Water Gun"], pwr: 13 }
+        { name: "Bulbasaur", id: 1, type: 'grass', hp: 100, maxHp: 100, moves: [{n: "Tackle", t: 'normal'}, {n: "Vine Whip", t: 'grass'}] },
+        { name: "Charmander", id: 4, type: 'fire', hp: 100, maxHp: 100, moves: [{n: "Scratch", t: 'normal'}, {n: "Ember", t: 'fire'}] },
+        { name: "Squirtle", id: 7, type: 'water', hp: 100, maxHp: 100, moves: [{n: "Tackle", t: 'normal'}, {n: "Water Gun", t: 'water'}] }
     ];
 
-    let enemy = { name: "", hp: 50, maxHp: 50, pwr: 8 };
+    let enemy = { name: "", type: "", hp: 50, maxHp: 50, sprite: "" };
 
-    // Initialization
     async function spawnEnemy() {
         const id = Math.floor(Math.random() * 151) + 1;
         const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
         const data = await res.json();
-        enemy.name = data.name.toUpperCase();
-        enemy.hp = 50;
-        document.getElementById('e-sprite').src = data.sprites.front_default;
-        document.getElementById('e-name').innerText = enemy.name;
+        enemy = {
+            name: data.name.toUpperCase(),
+            type: data.types[0].type.name,
+            hp: 50,
+            maxHp: 50,
+            sprite: data.sprites.front_default
+        };
         updateUI();
+        log(`A wild ${enemy.name} appeared!`);
+    }
+
+    function calculateMult(moveType, targetType) {
+        if (!types[targetType]) return 1;
+        if (types[targetType].weakTo.includes(moveType)) return 2;
+        if (types[targetType].resists.includes(moveType)) return 0.5;
+        return 1;
     }
 
     function updateUI() {
-        document.getElementById('p-sprite').src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${party[partyIndex].id}.png`;
-        document.getElementById('p-name').innerText = party[partyIndex].name;
-        document.getElementById('e-hp').innerText = Math.max(0, enemy.hp);
+        const p = party[partyIndex];
+        document.getElementById('p-sprite').src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${p.id}.png`;
+        document.getElementById('p-name').innerText = p.name;
+        document.getElementById('p-hp-text').innerText = Math.max(0, p.hp);
+        document.getElementById('p-hp-fill').style.width = (p.hp / p.maxHp * 100) + "%";
+
+        document.getElementById('e-sprite').src = enemy.sprite;
+        document.getElementById('e-name').innerText = enemy.name;
+        document.getElementById('e-hp-text').innerText = Math.max(0, enemy.hp);
+        document.getElementById('e-hp-fill').style.width = (enemy.hp / enemy.maxHp * 100) + "%";
+
         document.getElementById('credits').innerText = credits;
         document.getElementById('cost').innerText = Math.floor(upgradeCost);
-        document.getElementById('items').innerText = potions;
         document.getElementById('main-actions').style.display = isPlayerTurn ? "grid" : "none";
         document.getElementById('sub-actions').style.display = "none";
     }
 
-    // Battle Logic
     function showMoves() {
         const sub = document.getElementById('sub-actions');
-        sub.innerHTML = party[partyIndex].moves.map(m => `<button onclick="doAttack('${m}')">${m}</button>`).join('') + `<button onclick="updateUI()" style="background:#444">BACK</button>`;
+        sub.innerHTML = party[partyIndex].moves.map(m => 
+            `<button class="btn-move" onclick="doAttack('${m.n}', '${m.t}')">${m.n}<br><small>${m.t.toUpperCase()}</small></button>`
+        ).join('') + `<button onclick="updateUI()">BACK</button>`;
         document.getElementById('main-actions').style.display = "none";
         sub.style.display = "grid";
     }
 
-    function showParty() {
-        const sub = document.getElementById('sub-actions');
-        sub.innerHTML = party.map((p, i) => `<button onclick="swap(${i})">${p.name}</button>`).join('') + `<button onclick="updateUI()" style="background:#444">BACK</button>`;
-        document.getElementById('main-actions').style.display = "none";
-        sub.style.display = "grid";
-    }
-
-    function doAttack(moveName) {
+    function doAttack(moveName, moveType) {
         if (!isPlayerTurn) return;
-        let dmg = party[partyIndex].pwr + Math.floor(Math.random() * 5);
-        enemy.hp -= dmg;
-        log(`${party[partyIndex].name} used ${moveName}! Dealt ${dmg} dmg.`, "#00ffcc");
+        let mult = calculateMult(moveType, enemy.type);
+        let baseDmg = 10 + Math.floor(Math.random() * 5);
+        let totalDmg = Math.floor(baseDmg * mult);
         
+        enemy.hp -= totalDmg;
+        log(`${party[partyIndex].name} used ${moveName}!`);
+        if (mult > 1) log("It's super effective!", "#f6ad55");
+        if (mult < 1) log("It's not very effective...", "#a0aec0");
+
         if (enemy.hp <= 0) {
             victory();
         } else {
@@ -126,48 +159,51 @@
     }
 
     function enemyTurn() {
-        let dmg = enemy.pwr + Math.floor(Math.random() * 3);
-        log(`${enemy.name} attacked back! Dealt ${dmg} dmg.`, "#ff4d4d");
+        let dmg = 8 + Math.floor(Math.random() * 4);
+        party[partyIndex].hp -= dmg;
+        log(`${enemy.name} attacked! Dealt ${dmg} dmg.`, "#fc8181");
         isPlayerTurn = true;
         updateUI();
+        if (party[partyIndex].hp <= 0) log(`${party[partyIndex].name} fainted! Swap Pokémon!`, "#ff0000");
     }
 
-    function victory() {
-        credits += 30;
-        log(`Enemy fainted! Gained $30.`, "#fbd000");
-        spawnEnemy();
-        isPlayerTurn = true;
+    function showParty() {
+        const sub = document.getElementById('sub-actions');
+        sub.innerHTML = party.map((p, i) => 
+            `<button onclick="swap(${i})" ${p.hp <= 0 ? 'disabled' : ''}>${p.name} (HP: ${p.hp})</button>`
+        ).join('') + `<button onclick="updateUI()">BACK</button>`;
+        document.getElementById('main-actions').style.display = "none";
+        sub.style.display = "grid";
     }
 
-    function swap(index) {
-        partyIndex = index;
-        log(`Go, ${party[index].name}!`);
-        isPlayerTurn = false; // Swapping takes a turn
+    function swap(i) {
+        partyIndex = i;
+        log(`Go! ${party[i].name}!`);
+        isPlayerTurn = false;
         updateUI();
         setTimeout(enemyTurn, 800);
     }
 
-    function useItem() {
-        if(potions > 0) {
-            potions--;
-            log("Used Potion! (No actual HP yet, but you look cooler)");
-            updateUI();
-        }
+    function victory() {
+        credits += 40;
+        log(`Enemy fainted! Gained $40.`);
+        spawnEnemy();
+        isPlayerTurn = true;
     }
 
     function buyUpgrade() {
         if (credits >= upgradeCost) {
             credits -= upgradeCost;
-            party.forEach(p => p.pwr += 2);
-            upgradeCost *= 1.05; // 5% increase
-            log("Party power increased by 5%!");
+            party.forEach(p => { p.maxHp += 10; p.hp = p.maxHp; });
+            upgradeCost *= 1.05;
+            log("Party HP Upgraded!");
             updateUI();
         }
     }
 
     function log(m, c="#fff") {
         const l = document.getElementById('log');
-        l.innerHTML = `<span style="color:${c}">> ${m}</span><br>${l.innerHTML}`;
+        l.innerHTML = `<div style="color:${c}">> ${m}</div>` + l.innerHTML;
     }
 
     spawnEnemy();
