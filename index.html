@@ -1,38 +1,72 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Charcadet Hatch Hub</title>
-  <style>
-    body {
-      background-color: #111;
-      color: white;
-      font-family: Arial;
-      text-align: center;
-    }
-
-    .egg-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, 150px);
-      gap: 10px;
-      justify-content: center;
-    }
-
-    iframe {
-      border: none;
-    }
-  </style>
+    <title>Poke-Battler Lite</title>
+    <style>
+        body { font-family: 'Courier New', monospace; background: #222; color: #fff; text-align: center; }
+        #game-container { border: 2px solid #fbd000; width: 400px; margin: 50px auto; padding: 20px; border-radius: 10px; }
+        .stats { font-size: 1.2rem; margin-bottom: 20px; color: #00ffcc; }
+        .controls button { background: #ff1f1f; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 5px; }
+        .controls button:hover { background: #cc1a1a; }
+        #log { margin-top: 20px; height: 100px; overflow-y: auto; background: #333; padding: 10px; font-size: 0.9rem; }
+    </style>
 </head>
 <body>
 
-  <h1>InfernalCeruledge Hatch Center</h1>
+<div id="game-container">
+    <h1>POKE-BATTLER</h1>
+    <div class="stats">
+        Credits: $<span id="credits">0</span> | Power: <span id="power">10</span>
+    </div>
+    
+    <div class="controls">
+        <button onclick="battle()">BATTLE (Earn $)</button>
+        <button onclick="buyUpgrade()">UPGRADE (Cost: $50)</button>
+    </div>
 
-  <div class="egg-grid">
-<iframe src="https://api.pokeheroes.com/widgets/pkmninteract.php?id=50240878" style="width: 100px; height: 126px; border: 0" scrolling="no"></iframe>
-  <iframe src="https://api.pokeheroes.com/widgets/pkmninteract.php?id=50240879" style="width: 100px; height: 126px; border: 0" scrolling="no"></iframe>
-  <iframe src="https://api.pokeheroes.com/widgets/pkmninteract.php?id=50240880" style="width: 100px; height: 126px; border: 0" scrolling="no"></iframe>
-  <iframe src="https://api.pokeheroes.com/widgets/pkmninteract.php?id=50240881" style="width: 100px; height: 126px; border: 0" scrolling="no"></iframe>
-  <iframe src="https://api.pokeheroes.com/widgets/pkmninteract.php?id=50240882" style="width: 100px; height: 126px; border: 0" scrolling="no"></iframe>  </div>
+    <div id="log">Welcome, Trainer! Click Battle to start.</div>
+</div>
+
+<script>
+    let credits = 0;
+    let power = 10;
+    let upgradeCost = 50;
+
+    function updateDisplay() {
+        document.getElementById('credits').innerText = credits;
+        document.getElementById('power').innerText = power;
+    }
+
+    function log(message) {
+        const logDiv = document.getElementById('log');
+        logDiv.innerHTML = message + "<br>" + logDiv.innerHTML;
+    }
+
+    function battle() {
+        // Simple RNG: Win 70% of the time
+        let chance = Math.random();
+        if (chance > 0.3) {
+            let earnings = Math.floor(power * 0.5) + 10;
+            credits += earnings;
+            log(`Victory! Your power helped you earn $${earnings}.`);
+        } else {
+            log("Tough loss! You gained nothing this time.");
+        }
+        updateDisplay();
+    }
+
+    function buyUpgrade() {
+        if (credits >= upgradeCost) {
+            credits -= upgradeCost;
+            power += 5;
+            upgradeCost = Math.floor(upgradeCost * 1.5);
+            log(`Upgraded! Power is now ${power}. Next upgrade: $${upgradeCost}`);
+        } else {
+            log("Not enough credits!");
+        }
+        updateDisplay();
+    }
+</script>
 
 </body>
 </html>
-
